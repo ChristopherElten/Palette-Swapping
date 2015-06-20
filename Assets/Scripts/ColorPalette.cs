@@ -2,11 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 
 [Serializable]
 public class ColorPalette : ScriptableObject {
 
+#if UNITY_EDITOR
 	[MenuItem("Assets/Create/Color Palette")]
 	public static void CreateColorPalette(){
 
@@ -29,11 +32,12 @@ public class ColorPalette : ScriptableObject {
 		}
 
 	}
+#endif
 
 	public Texture2D source;
 	public List<Color>palette = new List<Color>();
 	public List<Color>newPalette = new List<Color>();
-
+	public Texture2D cachedTexture;
 
 	//Sampling color palette
 	private List<Color> BuildPalette(Texture2D texture){
@@ -58,12 +62,27 @@ public class ColorPalette : ScriptableObject {
 		palette = BuildPalette(source);
 		newPalette = new List<Color> (palette);
 	}
-	
+
+	public Color GetColor(Color color){
+
+		for (var i = 0; i < palette.Count; i++){
+			var tmpColor = palette[i];
+
+			if ((Mathf.Approximately(color.r, tmpColor.r)) && 
+			    (Mathf.Approximately(color.g, tmpColor.g)) &&
+			    (Mathf.Approximately(color.b, tmpColor.b)) &&
+			    (Mathf.Approximately(color.a, tmpColor.a)))
+			 {return newPalette[i];}
+		}
+
+		return color;
+	}
 }
 
 
 
 //Editor
+#if UNITY_EDITOR
 [CustomEditor(typeof(ColorPalette))]
 public class ColorPaletteEditor : Editor{
 
@@ -112,6 +131,5 @@ public class ColorPaletteEditor : Editor{
 		EditorUtility.SetDirty(colorPalette);
 		
 	}
-
-
 }
+#endif
