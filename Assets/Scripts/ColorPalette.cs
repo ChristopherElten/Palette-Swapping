@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using System;
 using UnityEditor;
 
@@ -18,11 +19,99 @@ public class ColorPalette : ScriptableObject {
 			selectionPath = selectionPath.Replace(".png", "-color-palette.asset");
 			var newPalette = CustomAssetUtil.CreateAsset<ColorPalette>(selectionPath);
 
+			//Prepopulating setting here
+			//Referencing source we are going to edit
+			newPalette.source = selectedTexture;
+			newPalette.ResetPalette();
 			Debug.Log ("Creating a Palette : " + selectionPath);
 		} else {
 			Debug.Log ("Can't create a Palette");
 		}
 
 	}
+
+	public Texture2D source;
+	public List<Color>palette = new List<Color>();
+	public List<Color>newPalette = new List<Color>();
+
+
+	//Sampling color palette
+	private List<Color> BuildPalette(Texture2D texture){
+
+		List <Color> palette = new List<Color>();
+		//Getting color information from texture
+		var colors = texture.GetPixels();
+
+		foreach(var color in colors){
+			if (!palette.Contains(color)){
+				//Only working with colors we see (alpha of 1)
+				if (color.a == 1)
+					palette.Add (color);
+			}
+		}
+
+		return palette;
+	}
+
+	//Reset the palette
+	public void ResetPalette(){
+		palette = BuildPalette(source);
+		newPalette = new List<Color> (palette);
+	}
 	
+}
+
+
+
+//Editor
+[CustomEditor(typeof(ColorPalette))]
+public class ColorPaletteEditor : Editor{
+
+	public ColorPalette colorPalette;
+
+	void OnEnable(){
+		colorPalette = target as ColorPalette;
+	}
+
+	//Renders what is scene in editor (i.e inspector)
+	override public void OnInspectorGUI(){
+
+		GUILayout.Label ("Source Texture");
+
+		//Field showing texture we are sampling from
+		//input
+		colorPalette.source = EditorGUILayout.ObjectField(colorPalette.source, typeof(Texture2D), false) as Texture2D;
+
+
+		//Horizontal block
+		EditorGUILayout.BeginHorizontal();
+
+		GUILayout.Label("Current Color");
+		GUILayout.Label("New Color");
+
+		EditorGUILayout.EndHorizontal();
+
+		for (var i = 0; i < colorPalette.palette.Count; i++){
+
+			EditorGUILayout.BeginHorizontal();
+
+			//Default color will not be editable
+			EditorGUILayout.ColorField(colorPalette.palette[i]);
+			//New color will be editable
+			colorPalette.newPalette[i] = EditorGUILayout.ColorField(colorPalette.newPalette[i]);
+
+
+			EditorGUILayout.EndHorizontal();
+		}
+
+		if (GUILayout.Button("Revert Palette")){
+			colorPalette.ResetPalette();
+		}
+
+		//Saving Changes
+		EditorUtility.SetDirty(colorPalette);
+		
+	}
+
+
 }
